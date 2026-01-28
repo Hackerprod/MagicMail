@@ -1,3 +1,6 @@
+using System;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 using MagicMail.Data;
 using Microsoft.Extensions.DependencyInjection;
@@ -46,11 +49,19 @@ namespace MagicMail.Services
             };
 
             // Crear signer usando la clave privada de la DB
-            // Asumimos que la Key en DB es PEM string.
-            // DkimSigner de MimeKit suele recibir Stream o path.
-            // Crearemos un stream en memoria.
-            
-            using var stream = new MemoryStream(Encoding.ASCII.GetBytes(domainConfig.DkimPrivateKey));
+            // MimeKit es estricto con el formato PEM.
+            // Si el usuario guardó la clave sin headers o todo en una línea, hay que arreglarlo.
+            string privateKeyPem;
+            try
+            {
+                privateKeyPem = NormalizePrivateKey(domainConfig.DkimPrivateKey);
+            }
+            catch (Exception ex)
+            {
+                throw new InvalidOperationException($"Invalid DKIM private key for domain '{domainConfig.DomainName}'", ex);
+            }
+
+            using var stream = new MemoryStream(Encoding.ASCII.GetBytes(privateKeyPem));
 
             var signer = new MimeKit.Cryptography.DkimSigner(
                 stream,
@@ -66,6 +77,31 @@ namespace MagicMail.Services
 
             message.Prepare(EncodingConstraint.SevenBit);
             signer.Sign(message, headers);
+        }
+
+        private static string NormalizePrivateKey(string rawKey)
+        {
+            if (string.IsNullOrWhiteSpace(rawKey))
+                throw new ArgumentException("The DKIM private key is empty.", nameof(rawKey));
+
+            var trimmed = rawKey.Trim();
+
+            if (trimmed.StartsWith("-----BEGIN", StringComparison.Ordinal))
+            {
+                using var rsa = RSA.Create();
+                rsa.ImportFromPem(trimmed);
+                return ExportRsaPrivateKeyPem(rsa);
+            }
+
+            // Assume plain base64 (PKCS#1) with no headers.
+            var keyBytes = Convert.FromBase64String(trimmed);
+            return new string(PemEncoding.Write("RSA PRIVATE KEY", keyBytes));
+        }
+
+        private static string ExportRsaPrivateKeyPem(RSA rsa)
+        {
+            var keyBytes = rsa.ExportRSAPrivateKey();
+            return new string(PemEncoding.Write("RSA PRIVATE KEY", keyBytes));
         }
     }
 }

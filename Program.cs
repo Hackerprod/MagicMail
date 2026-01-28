@@ -56,6 +56,7 @@ builder.Services.Configure<MagicMail.Settings.AdminSettings>(builder.Configurati
 // Registros de servicios Core
 builder.Services.AddSingleton<MagicMail.Services.DkimSigner>();
 builder.Services.AddSingleton<MagicMail.Services.MxResolver>(); // DNS Resolver
+builder.Services.AddSingleton<MagicMail.Services.ServerIdentityResolver>();
 builder.Services.AddScoped<MagicMail.Services.SmtpSender>();
 builder.Services.AddHostedService<MagicMail.Workers.QueueWorker>();
 builder.Services.AddHttpClient<MagicMail.Services.CloudflareService>(); // Cloudflare
