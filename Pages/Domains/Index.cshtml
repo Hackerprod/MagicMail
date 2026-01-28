@@ -1,0 +1,45 @@
+@page
+@model MagicMail.Pages.Domains.IndexModel
+@{
+    ViewData["Title"] = "Domains";
+}
+
+<h1>Domains</h1>
+
+<div class="mb-3">
+    <a asp-page="Create" class="btn btn-primary">Add New Domain</a>
+</div>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Domain</th>
+            <th>Cloudflare Zone ID</th>
+            <th>Verified</th>
+            <th>Created At</th>
+            <th>Validation</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Domains)
+        {
+            <tr>
+                <td>
+                    <a asp-page="./Details" asp-route-id="@item.Id" class="fw-bold text-decoration-none">@item.DomainName</a>
+                </td>
+                <td>@item.CloudflareZoneId</td>
+                <td>
+                    @if(item.IsVerified)
+                    {
+                        <span class="badge bg-success">Yes</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-warning text-dark">No</span>
+                    }
+                </td>
+                <td>@item.CreatedAt.ToShortDateString()</td>
+            </tr>
+        }
+    </tbody>
+</table>

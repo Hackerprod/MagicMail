@@ -1,0 +1,81 @@
+@page "{id:int}"
+@model MagicMail.Pages.Domains.DetailsModel
+@{
+    ViewData["Title"] = "Domain Details";
+}
+
+<div class="container">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>@Model.Domain.DomainName</h1>
+        <a asp-page="./Index" class="btn btn-outline-secondary">Back to List</a>
+    </div>
+
+    @if(Model.Message != null)
+    {
+        <div class="alert alert-info">@Model.Message</div>
+    }
+
+    <div class="row">
+        <!-- Info Column -->
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h5 class="mb-0">DNS Configuration</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row">
+                        <dt class="col-sm-4">Zone ID</dt>
+                        <dd class="col-sm-8">@Model.Domain.CloudflareZoneId</dd>
+
+                        <dt class="col-sm-4">Status</dt>
+                        <dd class="col-sm-8">
+                            @if(Model.Domain.IsVerified) { <span class="badge bg-success">Verified</span> }
+                            else { <span class="badge bg-warning text-dark">Unverified</span> }
+                        </dd>
+                    </dl>
+                    
+                    <h6>DKIM Selector</h6>
+                    <code>@Model.Domain.DkimSelector</code>
+                    
+                    <h6 class="mt-3">Public Key (DNS)</h6>
+                    <textarea class="form-control" rows="3" readonly>@Model.Domain.DkimPublicKey</textarea>
+                </div>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div class="card border-danger">
+                <div class="card-header bg-danger text-white">
+                    <h5 class="mb-0">Danger Zone</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">Deleting this domain will remove it from the database and attempt to clean up DNS records from Cloudflare.</p>
+                    <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Are you sure you want to delete @Model.Domain.DomainName? This action cannot be undone.');">
+                        <button type="submit" class="btn btn-danger">Delete Domain</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Testing Column -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Test Email Delivery</h5>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted">Send a test email signed with this domain's DKIM key to verify deliverability.</p>
+                    
+                    <form method="post" asp-page-handler="TestEmail">
+                        <div class="mb-3">
+                            <label class="form-label">Recipient Email</label>
+                            <input type="email" name="testEmail" class="form-control" placeholder="you@gmail.com" required />
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary">Send Test Email</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
