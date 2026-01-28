@@ -1,11 +1,72 @@
 @page
 @model IndexModel
 @{
-    ViewData["Title"] = "Home";
+    ViewData["Title"] = "Dashboard";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome to MagicMail</h1>
-    <p>Your self-hosted email provider.</p>
-    <a href="/Domains/Index" class="btn btn-primary btn-lg">Manage Domains</a>
+<!-- Page Header -->
+<div class="md:flex md:items-center md:justify-between mb-8 px-4 sm:px-0">
+    <div class="min-w-0 flex-1">
+        <h2 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+            Dashboard
+        </h2>
+    </div>
+    <div class="mt-4 flex md:ml-4 md:mt-0">
+        <a asp-page="/Domains/Create" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all">
+            <i class="bi bi-plus-lg mr-2"></i> Add Domain
+        </a>
+    </div>
+</div>
+
+<!-- Stats Stats -->
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8 px-4 sm:px-0">
+    <!-- Stat 1 -->
+    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow sm:p-6 border border-slate-100">
+        <dt class="truncate text-sm font-medium text-slate-500">Total Emails Sent</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">@Model.TotalSent.ToString("N0")</dd>
+        <div class="mt-1 flex items-baseline md:block lg:flex">
+             <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium bg-green-100 text-green-800 md:mt-2 lg:mt-0">
+                <i class="bi bi-check-lg mr-1"></i> Lifetime
+            </div>
+             <span class="ml-2 text-sm text-slate-400">emails delivered</span>
+        </div>
+    </div>
+    
+    <!-- Stat 2 -->
+    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow sm:p-6 border border-slate-100">
+        <dt class="truncate text-sm font-medium text-slate-500">Active Domains</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">@Model.ActiveDomains</dd>
+         <div class="mt-1 flex items-baseline md:block lg:flex">
+             <span class="text-sm text-brand-600 font-medium hover:text-brand-500">
+                 <a asp-page="/Domains/Index">View all</a>
+             </span>
+        </div>
+    </div>
+    
+    <!-- Stat 3 -->
+    <div class="overflow-hidden rounded-xl bg-white px-4 py-5 shadow sm:p-6 border border-slate-100">
+        <dt class="truncate text-sm font-medium text-slate-500">Reputation Score</dt>
+        <dd class="mt-1 text-3xl font-semibold tracking-tight text-slate-900">@Model.ReputationScore</dd>
+         <div class="mt-1 flex items-baseline md:block lg:flex">
+             <div class="inline-flex items-baseline rounded-full px-2.5 py-0.5 text-sm font-medium @(Model.ReputationLabel == "Excellent" ? "bg-green-100 text-green-800" : "bg-yellow-100 text-yellow-800") md:mt-2 lg:mt-0">
+                @Model.ReputationLabel
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity / Placeholder -->
+<div class="rounded-xl bg-white shadow-sm border border-slate-100 overflow-hidden mx-4 sm:mx-0">
+    <div class="border-b border-slate-200 bg-slate-50 px-4 py-4 sm:px-6">
+        <h3 class="text-base font-semibold leading-6 text-slate-900">
+            <i class="bi bi-activity mr-2 text-slate-400"></i> Recent Activity
+        </h3>
+    </div>
+    <div class="px-4 py-12 text-center sm:px-6">
+        <div class="mx-auto h-12 w-12 text-slate-300 mb-3">
+             <i class="bi bi-inbox text-4xl"></i>
+        </div>
+        <h3 class="mt-2 text-sm font-semibold text-slate-900">No recent activity</h3>
+        <p class="mt-1 text-sm text-slate-500">Get started by sending some emails via the API.</p>
+    </div>
 </div>

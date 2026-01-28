@@ -57,7 +57,12 @@ namespace MagicMail.Services
                 domainConfig.DomainName,
                 domainConfig.DkimSelector,
                 DkimSignatureAlgorithm.RsaSha256
-            );
+            )
+            {
+                HeaderCanonicalizationAlgorithm = DkimCanonicalizationAlgorithm.Relaxed,
+                BodyCanonicalizationAlgorithm = DkimCanonicalizationAlgorithm.Relaxed,
+                AgentOrUserIdentifier = $"@{domainConfig.DomainName}"
+            };
 
             message.Prepare(EncodingConstraint.SevenBit);
             signer.Sign(message, headers);

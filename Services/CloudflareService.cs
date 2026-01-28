@@ -49,7 +49,7 @@ namespace MagicMail.Services
             }
         }
 
-        public async Task<bool> CreateDnsRecordAsync(string zoneId, string type, string name, string content)
+        public async Task<bool> CreateDnsRecordAsync(string zoneId, string type, string name, string content, int? priority = null)
         {
             var record = new
             {
@@ -57,7 +57,8 @@ namespace MagicMail.Services
                 name = name,
                 content = content,
                 ttl = 1, // Auto
-                proxied = false
+                proxied = false,
+                priority = priority
             };
 
             try

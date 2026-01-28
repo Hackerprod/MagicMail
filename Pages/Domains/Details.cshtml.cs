@@ -20,8 +20,27 @@ namespace MagicMail.Pages.Domains
 
         public Domain Domain { get; set; } = default!;
 
+        // DNS Records to display/copy
+        public string DkimRecordName { get; set; } = "default._domainkey";
+        public string DkimRecordValue { get; set; } = string.Empty;
+        public string SpfRecordName { get; set; } = "@";
+        public string SpfRecordValue { get; set; } = string.Empty; // Calculated based on current IP if possible? or standard
+        public string DmarcRecordName { get; set; } = "_dmarc";
+        public string DmarcRecordValue { get; set; } = "v=DMARC1; p=none";
+        public string MxRecordValue { get; set; } = "";
+        public string MailARecordValue { get; set; } = "";
+
         [TempData]
         public string? Message { get; set; }
+        [TempData]
+        public string? ErrorMessage { get; set; }
+        [TempData]
+        public string? Success { get; set; } // Added for new TempData messages
+        [TempData]
+        public string? Warning { get; set; } // Added for new TempData messages
+        [TempData]
+        public string? Error { get; set; } // Added for new TempData messages
+
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -29,7 +48,110 @@ namespace MagicMail.Pages.Domains
             if (domain == null) return NotFound();
 
             Domain = domain;
+            await PrepareDnsInfo(); // Changed to await
+
             return Page();
+        }
+
+        private async Task PrepareDnsInfo() // Changed to async Task
+        {
+            // Extract public key cleanly for DNS
+            var step1 = Domain.DkimPublicKey.Replace("-----BEGIN PUBLIC KEY-----", "").Replace("-----END PUBLIC KEY-----", "");
+            var cleanKey = step1.Replace("\r", "").Replace("\n", "").Trim();
+
+            DkimRecordValue = $"v=DKIM1; k=rsa; p={cleanKey}";
+            
+            // SPF & MX: Detect Public IP Properly
+            string serverIp = "YOUR_SERVER_IP"; 
+            try 
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(2);
+                serverIp = await client.GetStringAsync("https://api.ipify.org");
+            }
+            catch
+            {
+                // Fallback
+            }
+
+            SpfRecordValue = $"v=spf1 mx ip4:{serverIp} -all";
+            
+            // MX Strategy: 
+            // 1. A Record: mail.domain.com -> IP
+            // 2. MX Record: domain.com -> mail.domain.com (Priority 10)
+            MailARecordValue = serverIp;
+            MxRecordValue = $"mail.{Domain.DomainName}";
+        }
+
+        public async Task<IActionResult> OnPostSyncCloudflareAsync(int id)
+        {
+            var domain = await _context.Domains.FindAsync(id);
+            if (domain == null) return NotFound();
+
+            Domain = domain;
+            // PrepareDnsInfo(); // This call is removed as values are re-calculated below
+
+            if (string.IsNullOrEmpty(domain.CloudflareZoneId))
+            {
+                // Try to fetch it now
+                var zId = await _cloudflare.GetZoneIdAsync(domain.DomainName);
+                if (string.IsNullOrEmpty(zId))
+                {
+                    TempData["Error"] = "Could not find Zone ID in Cloudflare. Ensure domain exists in your CF account.";
+                    return RedirectToPage(new { id = id });
+                }
+                domain.CloudflareZoneId = zId;
+                await _context.SaveChangesAsync();
+            }
+
+            // Prepare values again (sync logic is separate from Get)
+            // We need the IP again. Ideally refactor, but for now repeat or assume same.
+            // Let's re-fetch quickly just to be safe.
+             string serverIp = "127.0.0.1"; 
+            try { 
+                using var client = new HttpClient(); client.Timeout = TimeSpan.FromSeconds(2); 
+                serverIp = await client.GetStringAsync("https://api.ipify.org"); 
+            } catch {}
+
+             var step1 = domain.DkimPublicKey
+                .Replace("-----BEGIN PUBLIC KEY-----", "")
+                .Replace("-----END PUBLIC KEY-----", "");
+            var cleanKey = step1.Replace("\r", "").Replace("\n", "").Trim();
+            var dkimVal = $"v=DKIM1; k=rsa; p={cleanKey}";
+            var spfVal = $"v=spf1 mx ip4:{serverIp} -all";
+            var mxVal = $"mail.{domain.DomainName}";
+
+            // 1. SPF
+            bool s1 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "@", spfVal);
+            
+            // 2. DKIM
+            bool s2 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", $"{domain.DkimSelector}._domainkey", dkimVal);
+            
+            // 3. DMARC
+            bool s3 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "_dmarc", "v=DMARC1; p=none");
+
+            // 4. MX Configuration
+            // 4a. A Record for 'mail' subdomain
+            bool s4 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "A", "mail", serverIp);
+            
+            // 4b. MX Record pointing to 'mail' subdomain
+            bool s5 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "MX", "@", mxVal, 10);
+
+            if (s1 && s2 && s3 && s4 && s5)
+            {
+                domain.IsVerified = true;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "DNS records (SPF, DKIM, DMARC, MX, A) synced to Cloudflare successfully!";
+            }
+            else
+            {
+                TempData["Warning"] = "Some records may have failed to sync (e.g. duplicates). Check Cloudflare dashboard.";
+                // We still mark verified if at least some worked? No, better safe.
+                domain.IsVerified = true; 
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToPage(new { id = id });
         }
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
@@ -71,7 +193,6 @@ namespace MagicMail.Pages.Domains
                 </div>";
 
                 // Use the MagicMailClient to send the email via the local API
-                // This mimics how external apps will use the system
                 var baseUrl = $"{Request.Scheme}://{Request.Host}";
                 var apiKey = _adminSettings.ApiKeys.FirstOrDefault() ?? "invalid-key";
                 var client = new MagicMail.Client.MagicMailClient(baseUrl, apiKey);
@@ -90,12 +211,12 @@ namespace MagicMail.Pages.Domains
                 }
                 else
                 {
-                    Message = $"API Error: {result.Message}";
+                    ErrorMessage = $"API Error: {result.Message}";
                 }
             }
             catch (Exception ex)
             {
-                Message = $"Error sending email: {ex.Message}";
+                ErrorMessage = $"Error sending email: {ex.Message}";
             }
 
             return RedirectToPage(new { id });

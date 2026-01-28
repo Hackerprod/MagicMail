@@ -15,5 +15,8 @@ namespace MagicMail.Settings
         public string DkimDomain { get; set; } = string.Empty;
         public string DkimSelector { get; set; } = "default";
         public string DkimPrivateKeyPath { get; set; } = "dkim_private.pem";
+
+        // Advanced Delivery
+        public string? HeloHostname { get; set; } // Opcional: Para forzar el nombre en HELO/EHLO (ej: vmi...contaboserver.net)
     }
 }

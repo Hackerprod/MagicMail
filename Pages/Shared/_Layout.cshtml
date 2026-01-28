@@ -1,38 +1,106 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="h-full bg-slate-50">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - MagicMail</title>
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#eef2ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1', // Indigo
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
     <style>
-        body { background-color: #f8f9fa; }
-        .card { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); border: none; }
-        .navbar-brand { font-weight: bold; color: #6610f2 !important; }
+        /* CustomScrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
-<body>
-    <header>
-        <nav class="navbar navbar-expand-sm navbar-light bg-white border-bottom box-shadow mb-3">
-            <div class="container">
-                <a class="navbar-brand" asp-area="" asp-page="/Index">MagicMail</a>
-                <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
-                    <ul class="navbar-nav flex-grow-1">
-                        <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-page="/Domains/Index">Dominios</a>
-                        </li>
-                    </ul>
+<body class="h-full font-sans antialiased text-slate-900">
+    <div class="min-h-full flex flex-col">
+        <!-- Navbar -->
+        <nav class="bg-white border-b border-slate-200 sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex justify-between h-16">
+                    <div class="flex">
+                        <div class="flex-shrink-0 flex items-center gap-2">
+                            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-white font-bold shadow-md">
+                                <i class="bi bi-envelope-fill"></i>
+                            </div>
+                            <span class="font-bold text-xl tracking-tight text-slate-800">MagicMail</span>
+                        </div>
+                        <div class="hidden sm:ml-8 sm:flex sm:space-x-8">
+                            <a asp-page="/Index" class="border-transparent text-slate-500 hover:border-brand-500 hover:text-slate-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                Dashboard
+                            </a>
+                            <a asp-page="/Domains/Index" class="border-transparent text-slate-500 hover:border-brand-500 hover:text-slate-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors">
+                                Domains
+                            </a>
+                            <a href="#" class="border-transparent text-slate-500 hover:border-brand-500 hover:text-slate-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium transition-colors opacity-50 cursor-not-allowed" title="Coming Soon">
+                                Queues
+                            </a>
+                        </div>
+                    </div>
+                    <div class="flex items-center">
+                        <button type="button" class="bg-white p-1 rounded-full text-slate-400 hover:text-slate-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-brand-500">
+                           <span class="sr-only">View notifications</span>
+                           <i class="bi bi-bell text-xl"></i>
+                        </button>
+                        <div class="ml-3 relative">
+                            <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 font-bold text-sm">
+                                AD
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
-    </header>
-    <div class="container">
-        <main role="main" class="pb-3">
-            @RenderBody()
+
+        <!-- Main Content -->
+        <main class="flex-grow">
+            <div class="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+                @RenderBody()
+            </div>
         </main>
+        
+        <!-- Footer -->
+        <footer class="bg-white border-t border-slate-200 mt-auto">
+            <div class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+                <p class="text-center text-sm text-slate-500">
+                    &copy; @DateTime.Now.Year MagicMail <span class="mx-1">&middot;</span> Autonomous MTA <span class="mx-1">&middot;</span> v1.0.0
+                </p>
+            </div>
+        </footer>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

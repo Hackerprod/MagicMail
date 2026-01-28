@@ -4,75 +4,222 @@
     ViewData["Title"] = "Domain Details";
 }
 
-<div class="container">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>@Model.Domain.DomainName</h1>
-        <a asp-page="./Index" class="btn btn-outline-secondary">Back to List</a>
+<div class="max-w-7xl mx-auto px-4 sm:px-0 py-6">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="min-w-0 flex-1">
+             <nav class="flex" aria-label="Breadcrumb">
+                <ol role="list" class="flex items-center space-x-4">
+                    <li>
+                        <div>
+                        <a href="/" class="text-slate-400 hover:text-slate-500"><i class="bi bi-house-door"></i></a>
+                        </div>
+                    </li>
+                    <li>
+                        <div class="flex items-center">
+                        <i class="bi bi-chevron-right text-slate-400 text-xs"></i>
+                        <a href="/Domains/Index" class="ml-4 text-sm font-medium text-slate-500 hover:text-slate-700">Domains</a>
+                        </div>
+                    </li>
+                     <li>
+                        <div class="flex items-center">
+                        <i class="bi bi-chevron-right text-slate-400 text-xs"></i>
+                        <span class="ml-4 text-sm font-medium text-slate-500" aria-current="page">Details</span>
+                        </div>
+                    </li>
+                </ol>
+            </nav>
+            <h2 class="mt-2 text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">
+                @Model.Domain.DomainName
+            </h2>
+        </div>
+        <div class="mt-4 flex md:ml-4 md:mt-0">
+             <a asp-page="./Index" class="inline-flex items-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 hover:bg-slate-50">Back</a>
+        </div>
     </div>
 
-    @if(Model.Message != null)
+    @if (TempData["Message"] != null)
     {
-        <div class="alert alert-info">@Model.Message</div>
-    }
-
-    <div class="row">
-        <!-- Info Column -->
-        <div class="col-md-6">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="mb-0">DNS Configuration</h5>
+        <div class="rounded-md bg-green-50 p-4 mb-6 border border-green-200">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-check-circle-fill text-green-400"></i>
                 </div>
-                <div class="card-body">
-                    <dl class="row">
-                        <dt class="col-sm-4">Zone ID</dt>
-                        <dd class="col-sm-8">@Model.Domain.CloudflareZoneId</dd>
-
-                        <dt class="col-sm-4">Status</dt>
-                        <dd class="col-sm-8">
-                            @if(Model.Domain.IsVerified) { <span class="badge bg-success">Verified</span> }
-                            else { <span class="badge bg-warning text-dark">Unverified</span> }
-                        </dd>
-                    </dl>
-                    
-                    <h6>DKIM Selector</h6>
-                    <code>@Model.Domain.DkimSelector</code>
-                    
-                    <h6 class="mt-3">Public Key (DNS)</h6>
-                    <textarea class="form-control" rows="3" readonly>@Model.Domain.DkimPublicKey</textarea>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-green-800">@TempData["Message"]</p>
                 </div>
             </div>
-            
-            <!-- Danger Zone -->
-            <div class="card border-danger">
-                <div class="card-header bg-danger text-white">
-                    <h5 class="mb-0">Danger Zone</h5>
+        </div>
+    }
+    @if (TempData["ErrorMessage"] != null)
+    {
+         <div class="rounded-md bg-red-50 p-4 mb-6 border border-red-200">
+            <div class="flex">
+                <div class="flex-shrink-0">
+                    <i class="bi bi-x-circle-fill text-red-400"></i>
                 </div>
-                <div class="card-body">
-                    <p class="card-text">Deleting this domain will remove it from the database and attempt to clean up DNS records from Cloudflare.</p>
-                    <form method="post" asp-page-handler="Delete" onsubmit="return confirm('Are you sure you want to delete @Model.Domain.DomainName? This action cannot be undone.');">
-                        <button type="submit" class="btn btn-danger">Delete Domain</button>
+                <div class="ml-3">
+                    <p class="text-sm font-medium text-red-800">@TempData["ErrorMessage"]</p>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Column (Left/Top) -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- DNS Configuration Card -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
+                <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">DNS Configuration</h3>
+                    <p class="mt-1 text-sm text-slate-500">Required records to authorize sending.</p>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    <p class="text-sm text-slate-600 mb-4">Add these records to your DNS provider (Cloudflare, GoDaddy, etc.)</p>
+                    
+                    <div class="overflow-x-auto rounded-lg border border-slate-200 mb-6">
+                        <table class="min-w-full divide-y divide-slate-200">
+                            <thead class="bg-slate-50">
+                                <tr>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Type</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Name (Host)</th>
+                                    <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Value</th>
+                                    <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-slate-200">
+                                <!-- A Record (mail) -->
+                                <tr>
+                                    <td class="px-3 py-4 whitespace-nowrap text-sm text-slate-500"><span class="inline-flex items-center rounded-sm bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800">A</span></td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-900">mail.@Model.Domain.DomainName</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-600 break-all">@Model.MailARecordValue</td>
+                                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="navigator.clipboard.writeText('@Model.MailARecordValue')" class="text-brand-600 hover:text-brand-900">Copy</button>
+                                    </td>
+                                </tr>
+                                <!-- MX Record -->
+                                <tr>
+                                    <td class="px-3 py-4 whitespace-nowrap text-sm text-slate-500"><span class="inline-flex items-center rounded-sm bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-800">MX</span></td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-900">@Model.Domain.DomainName</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-600 break-all">@Model.MxRecordValue <span class="text-xs text-slate-400 ml-1">(Priority 10)</span></td>
+                                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="navigator.clipboard.writeText('@Model.MxRecordValue')" class="text-brand-600 hover:text-brand-900">Copy</button>
+                                    </td>
+                                </tr>
+                                <!-- DKIM -->
+                                <tr>
+                                    <td class="px-3 py-4 whitespace-nowrap text-sm text-slate-500"><span class="inline-flex items-center rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">TXT</span></td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-900 break-all">@Model.DkimRecordName</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-600 max-w-xs truncate" title="@Model.DkimRecordValue">@Model.DkimRecordValue</td>
+                                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="navigator.clipboard.writeText('@Model.DkimRecordValue')" class="text-brand-600 hover:text-brand-900">Copy</button>
+                                    </td>
+                                </tr>
+                                <!-- SPF -->
+                                <tr>
+                                    <td class="px-3 py-4 whitespace-nowrap text-sm text-slate-500"><span class="inline-flex items-center rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">TXT</span></td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-900">@Model.SpfRecordName</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-600 break-all">@Model.SpfRecordValue</td>
+                                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="navigator.clipboard.writeText('@Model.SpfRecordValue')" class="text-brand-600 hover:text-brand-900">Copy</button>
+                                    </td>
+                                </tr>
+                                <!-- DMARC -->
+                                <tr>
+                                    <td class="px-3 py-4 whitespace-nowrap text-sm text-slate-500"><span class="inline-flex items-center rounded-sm bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-800">TXT</span></td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-900">@Model.DmarcRecordName</td>
+                                    <td class="px-3 py-4 text-sm font-mono text-slate-600">@Model.DmarcRecordValue</td>
+                                    <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button onclick="navigator.clipboard.writeText('@Model.DmarcRecordValue')" class="text-brand-600 hover:text-brand-900">Copy</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <form asp-page-handler="SyncCloudflare" method="post">
+                        <button type="submit" class="inline-flex items-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600">
+                            <i class="bi bi-cloud-upload mr-2"></i> Sync to Cloudflare
+                        </button>
+                        <p class="mt-2 text-xs text-slate-500">Only if you configured a Cloudflare API Key. Otherwise ignore.</p>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Test Delivery Card -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
+                <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">Test Delivery</h3>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    <form asp-page-handler="TestEmail" method="post" class="sm:flex sm:items-center">
+                        <div class="w-full sm:max-w-xs">
+                             <label for="testEmail" class="sr-only">Recipient Email</label>
+                             <input type="email" name="testEmail" id="testEmail" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
+                        </div>
+                        <button type="submit" class="mt-3 inline-flex w-full items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 sm:ml-3 sm:mt-0 sm:w-auto">
+                            Send Test Email
+                        </button>
                     </form>
                 </div>
             </div>
         </div>
 
-        <!-- Testing Column -->
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Test Email Delivery</h5>
+        <!-- Sidebar Column (Right) -->
+        <div class="space-y-6">
+            <!-- Info Card -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
+                <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">Domain Info</h3>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted">Send a test email signed with this domain's DKIM key to verify deliverability.</p>
-                    
-                    <form method="post" asp-page-handler="TestEmail">
-                        <div class="mb-3">
-                            <label class="form-label">Recipient Email</label>
-                            <input type="email" name="testEmail" class="form-control" placeholder="you@gmail.com" required />
+                <div class="border-t border-slate-200 px-4 py-5 sm:p-0">
+                    <dl class="divide-y divide-slate-200">
+                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">ID</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">@Model.Domain.Id</dd>
                         </div>
-                        <div class="d-grid">
-                            <button type="submit" class="btn btn-primary">Send Test Email</button>
+                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">Status</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
+                                @if (Model.Domain.IsVerified)
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Verified</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Unverified</span>
+                                }
+                            </dd>
                         </div>
+                         <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">Zone ID</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
+                                 @if (!string.IsNullOrEmpty(Model.Domain.CloudflareZoneId))
+                                {
+                                    <code class="text-xs">@Model.Domain.CloudflareZoneId</code>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400 italic">Not Synced</span>
+                                }
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-white shadow-sm ring-1 ring-red-200 rounded-xl overflow-hidden">
+                <div class="border-b border-red-100 bg-red-50 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-red-700">Danger Zone</h3>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    <p class="text-sm text-slate-500 mb-4">Deleting this domain will permanently remove it from the database and attempt to clean up Cloudflare records.</p>
+                     <form asp-page-handler="Delete" method="post">
+                        <button type="submit" class="w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 transition-colors" onclick="return confirm('Are you sure you want to delete this domain? This cannot be undone.');">
+                            Delete Domain
+                        </button>
                     </form>
                 </div>
             </div>

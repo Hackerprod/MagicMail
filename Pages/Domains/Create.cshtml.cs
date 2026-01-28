@@ -28,8 +28,12 @@ namespace MagicMail.Pages.Domains
             [Required]
             public string DomainName { get; set; } = string.Empty;
             
-            [Required]
-            public string ServerIp { get; set; } = string.Empty;
+            // ServerIp can be inferred or configured globally, asking it every time is user hostile if it's the same VPS.
+            // But for SPF we need it. Let's make it optional or default to current.
+            // For now, let's keep it but make it optional? Or better, remove it and use the one detected/configured.
+            // User rules said "user requested to remove placeholders".
+            // Let's remove it from Input and calculate it later in Details.
+            // public string ServerIp { get; set; } = string.Empty;
         }
 
         public void OnGet()
@@ -54,30 +58,21 @@ namespace MagicMail.Pages.Domains
                                 Convert.ToBase64String(pubKeyBytes, Base64FormattingOptions.InsertLineBreaks) + 
                                 "\r\n-----END PUBLIC KEY-----";
 
-                // 2. Cloudflare Integration
-                var zoneId = await _cloudflare.GetZoneIdAsync(Input.DomainName);
+                // 2. Cloudflare Integration (REMOVED: Now manual in Details page)
+                // We just default IsVerified to false until they set up DNS.
+                var zoneId = ""; // Optional, will be fetched if they sync manually later? Or we can try to fetch it now but not fail?
                 
-                if (string.IsNullOrEmpty(zoneId))
+                // Let's try to fetch ZoneID silently, but NOT create records.
+                try 
                 {
-                    ModelState.AddModelError(string.Empty, "Could not find Cloudflare Zone. Check domain name and API Key configuration.");
-                    return Page();
+                    zoneId = await _cloudflare.GetZoneIdAsync(Input.DomainName) ?? "";
+                }
+                catch 
+                {
+                    // Ignore, user can sync later.
                 }
 
-                bool dnsSuccess = true;
-
-                // DKIM
-                dnsSuccess &= await _cloudflare.CreateDnsRecordAsync(zoneId, "TXT", "default._domainkey", $"v=DKIM1; k=rsa; p={pubKeyClean}");
-                
-                // SPF
-                dnsSuccess &= await _cloudflare.CreateDnsRecordAsync(zoneId, "TXT", "@", $"v=spf1 ip4:{Input.ServerIp} -all");
-                
-                // DMARC
-                dnsSuccess &= await _cloudflare.CreateDnsRecordAsync(zoneId, "TXT", "_dmarc", "v=DMARC1; p=none");
-
-                if (!dnsSuccess)
-                {
-                    ModelState.AddModelError(string.Empty, "Some DNS records failed to create. check logs.");
-                }
+                bool dnsSuccess = false; // By default not verified until they add records.
 
                 // 3. Save to DB
                 var domain = new Domain

@@ -78,9 +78,10 @@ namespace MagicMail.Services
                     using var client = new SmtpClient();
 
                     // CRITICAL for Spam Avoidance: Set HELO/EHLO hostname BEFORE connecting.
-                    // This ensures the greeting "EHLO mydomain.com" matches our Sender header, 
-                    // instead of sending "EHLO VPS-HOSTNAME".
-                    client.LocalDomain = domainName;
+                    // If we have a fixed HeloHostname (rDNS), use top priority. Otherwise use sender domain.
+                    client.LocalDomain = !string.IsNullOrEmpty(_settings.HeloHostname) 
+                        ? _settings.HeloHostname 
+                        : domainName;
 
                     // Also force Message-Id to use our domain to avoid leaking internal hostname
                     message.MessageId = MimeKit.Utils.MimeUtils.GenerateMessageId(domainName);

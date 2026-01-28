@@ -4,42 +4,69 @@
     ViewData["Title"] = "Domains";
 }
 
-<h1>Domains</h1>
-
-<div class="mb-3">
-    <a asp-page="Create" class="btn btn-primary">Add New Domain</a>
+<!-- Header -->
+<div class="sm:flex sm:items-center sm:justify-between mb-8 px-4 sm:px-0">
+    <div>
+        <h1 class="text-2xl font-bold leading-7 text-slate-900 sm:truncate sm:text-3xl sm:tracking-tight">Domains</h1>
+        <p class="mt-2 text-sm text-slate-500">A list of all verified domains capable of sending emails.</p>
+    </div>
+    <div class="mt-4 sm:ml-16 sm:mt-0 sm:flex-none">
+        <a asp-page="Create" class="block rounded-md bg-brand-600 px-3 py-2 text-center text-sm font-semibold text-white shadow-sm hover:bg-brand-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-600 transition-all">
+            Add Domain
+        </a>
+    </div>
 </div>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Domain</th>
-            <th>Cloudflare Zone ID</th>
-            <th>Verified</th>
-            <th>Created At</th>
-            <th>Validation</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var item in Model.Domains)
-        {
+<!-- Table Card -->
+<div class="bg-white shadow-sm ring-1 ring-slate-900/5 sm:rounded-xl overflow-hidden mx-4 sm:mx-0">
+    <table class="min-w-full divide-y divide-slate-300">
+        <thead class="bg-slate-50">
             <tr>
-                <td>
-                    <a asp-page="./Details" asp-route-id="@item.Id" class="fw-bold text-decoration-none">@item.DomainName</a>
-                </td>
-                <td>@item.CloudflareZoneId</td>
-                <td>
-                    @if(item.IsVerified)
-                    {
-                        <span class="badge bg-success">Yes</span>
-                    }
-                    else
-                    {
-                        <span class="badge bg-warning text-dark">No</span>
-                    }
-                </td>
-                <td>@item.CreatedAt.ToShortDateString()</td>
+                <th scope="col" class="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-slate-900 sm:pl-6">Domain Name</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Cloudflare Status</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Verified</th>
+                <th scope="col" class="px-3 py-3.5 text-left text-sm font-semibold text-slate-900">Created At</th>
+                <th scope="col" class="relative py-3.5 pl-3 pr-4 sm:pr-6">
+                    <span class="sr-only">Edit</span>
+                </th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody class="divide-y divide-slate-200 bg-white">
+            @foreach (var item in Model.Domains) {
+                <tr class="hover:bg-slate-50 transition-colors">
+                    <td class="whitespace-nowrap py-4 pl-4 pr-3 text-sm font-medium text-slate-900 sm:pl-6">
+                        <a asp-page="./Details" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-900 hover:underline">
+                            @Html.DisplayFor(modelItem => item.DomainName)
+                        </a>
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        @if (!string.IsNullOrEmpty(item.CloudflareZoneId))
+                        {
+                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Synced</span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center rounded-md bg-slate-50 px-2 py-1 text-xs font-medium text-slate-600 ring-1 ring-inset ring-slate-500/10">Local Only</span>
+                        }
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                         @if (item.IsVerified)
+                        {
+                            <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Active</span>
+                        }
+                        else
+                        {
+                            <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Pending DNS</span>
+                        }
+                    </td>
+                    <td class="whitespace-nowrap px-3 py-4 text-sm text-slate-500">
+                        @item.CreatedAt.ToShortDateString()
+                    </td>
+                    <td class="relative whitespace-nowrap py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-6">
+                        <a asp-page="./Details" asp-route-id="@item.Id" class="text-brand-600 hover:text-brand-900">Manage<span class="sr-only">, @item.DomainName</span></a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
