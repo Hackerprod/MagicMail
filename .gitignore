@@ -52,3 +52,7 @@ appsettings.Development.json
 appsettings.json
 keys/
 *.db
+
+# Others
+.pem
+WATCH.cmd
