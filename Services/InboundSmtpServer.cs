@@ -189,23 +189,32 @@ namespace MagicMail.Services
                         domain.DomainName);
 
                     // Create forwarded message
+                    // Extract original sender info
+                    var originalFromMailbox = message.From.Mailboxes.FirstOrDefault();
+                    var originalEmail = originalFromMailbox?.Address ?? "unknown@unknown.com";
+                    var originalName = originalFromMailbox?.Name ?? originalEmail;
+
                     var forwardedEmail = new EmailMessage
                     {
                         To = alias.ForwardTo,
-                        Subject = message.Subject ?? "(No Subject)",
+                        Subject = $"[Fwd: {alias.LocalPart}@{domain.DomainName}] {message.Subject ?? "(No Subject)"}",
                         Body = message.HtmlBody ?? message.TextBody ?? "",
-                        FromEmail = $"redirect@{domain.DomainName}",
-                        FromName = $"Forwarded via {domain.DomainName}",
+                        FromEmail = $"forward@{domain.DomainName}",
+                        FromName = $"Fwd: {originalName}",
                         Status = "Pending",
                         CreatedAt = DateTime.UtcNow
                     };
 
-                    // Add original headers as a note
-                    var originalFrom = message.From.ToString();
-                    forwardedEmail.Body = $"<div style='background:#f0f0f0;padding:10px;margin-bottom:15px;font-size:12px;'>" +
-                        $"<strong>Forwarded for:</strong> {address}<br>" +
-                        $"<strong>Original From:</strong> {originalFrom}" +
-                        $"</div>{forwardedEmail.Body}";
+                    // Add original headers as a prominent info box with clickable reply link
+                    forwardedEmail.Body = $@"<div style='background:#e8f4fc;border:1px solid #b8daef;padding:12px;margin-bottom:15px;border-radius:6px;font-family:sans-serif;'>
+                        <div style='font-size:14px;color:#1a73e8;font-weight:bold;margin-bottom:8px;'>📬 Forwarded Email</div>
+                        <table style='font-size:13px;color:#333;'>
+                            <tr><td style='padding:2px 8px 2px 0;color:#666;'><strong>To:</strong></td><td>{address}</td></tr>
+                            <tr><td style='padding:2px 8px 2px 0;color:#666;'><strong>From:</strong></td><td><a href='mailto:{originalEmail}' style='color:#1a73e8;'>{originalName} &lt;{originalEmail}&gt;</a></td></tr>
+                            <tr><td style='padding:2px 8px 2px 0;color:#666;'><strong>Reply:</strong></td><td><a href='mailto:{originalEmail}?subject=Re: {System.Net.WebUtility.UrlEncode(message.Subject ?? "")}' style='background:#1a73e8;color:white;padding:4px 12px;border-radius:4px;text-decoration:none;font-size:12px;'>↩ Reply to {originalEmail}</a></td></tr>
+                        </table>
+                    </div>
+                    {forwardedEmail.Body}";
 
                     db.EmailMessages.Add(forwardedEmail);
                 }
