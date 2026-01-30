@@ -164,6 +164,72 @@
                     </form>
                 </div>
             </div>
+
+            <!-- Email Aliases Card -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
+                <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">
+                        <i class="bi bi-envelope-arrow-up mr-2"></i>Email Aliases (Forwarding)
+                    </h3>
+                    <p class="mt-1 text-sm text-slate-500">Forward incoming emails to external addresses. Use <code class="bg-slate-100 px-1 rounded">*</code> as catch-all.</p>
+                </div>
+                <div class="px-4 py-5 sm:p-6">
+                    @if (Model.Aliases.Any())
+                    {
+                        <div class="overflow-x-auto rounded-lg border border-slate-200 mb-4">
+                            <table class="min-w-full divide-y divide-slate-200">
+                                <thead class="bg-slate-50">
+                                    <tr>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Alias</th>
+                                        <th class="px-3 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Forward To</th>
+                                        <th class="px-3 py-3 text-right text-xs font-medium text-slate-500 uppercase tracking-wider">Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-slate-200">
+                                    @foreach (var alias in Model.Aliases)
+                                    {
+                                        <tr>
+                                            <td class="px-3 py-4 text-sm font-mono text-slate-900">
+                                                @alias.LocalPart<span class="text-slate-400">@@@Model.Domain.DomainName</span>
+                                            </td>
+                                            <td class="px-3 py-4 text-sm font-mono text-slate-600">@alias.ForwardTo</td>
+                                            <td class="px-3 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                <form asp-page-handler="DeleteAlias" method="post" class="inline">
+                                                    <input type="hidden" name="aliasId" value="@alias.Id" />
+                                                    <button type="submit" class="text-red-600 hover:text-red-900" onclick="return confirm('Delete this alias?');">
+                                                        <i class="bi bi-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-sm text-slate-500 mb-4">No aliases configured yet. Add one below.</p>
+                    }
+
+                    <!-- Add Alias Form -->
+                    <form asp-page-handler="AddAlias" method="post" class="flex flex-col sm:flex-row gap-2">
+                        <div class="flex-1 flex items-center gap-1">
+                            <input type="text" name="localPart" placeholder="support" required
+                                   class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 font-mono">
+                            <span class="text-slate-500 font-mono text-sm whitespace-nowrap">@@@Model.Domain.DomainName</span>
+                        </div>
+                        <span class="text-slate-400 hidden sm:inline self-center">→</span>
+                        <div class="flex-1">
+                            <input type="email" name="forwardTo" placeholder="your@gmail.com" required
+                                   class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6 font-mono">
+                        </div>
+                        <button type="submit" class="inline-flex items-center justify-center rounded-md bg-brand-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-brand-500">
+                            <i class="bi bi-plus-lg mr-1"></i> Add
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
 
         <!-- Sidebar Column (Right) -->

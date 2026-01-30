@@ -7,6 +7,7 @@
 - **Direct SMTP Delivery**: Sends emails directly to recipients' mail servers (MX lookup) without needing a relay SMTP.
 - **DKIM Signing**: Automatically signs all outgoing emails with DKIM for improved deliverability.
 - **SPF/DMARC Ready**: Generates the correct DNS records for SPF, DKIM, DMARC, and MX.
+- **Email Forwarding (Aliases)**: Receive emails on your domains and forward them to external addresses. Supports catch-all (`*@domain`).
 - **Cloudflare Integration**: One-click DNS record synchronization to Cloudflare. No manual DNS editing required.
 - **Multi-Provider Support**: Displays all required DNS records for manual configuration in GoDaddy, Namecheap, or any other DNS provider.
 - **Queue-Based Processing**: Emails are queued in a local SQLite database and processed by a background worker with retry logic.
@@ -194,6 +195,42 @@ dotnet run -- gen-dkim
 ```
 
 This generates `dkim_private.pem` and `dkim_public.pem` files and prints the DNS record value.
+
+---
+
+## 📬 Email Forwarding (Aliases)
+
+MagicMail can receive emails on your managed domains and forward them to external addresses without storing them locally.
+
+### Setup
+
+1. Set `EnableInboundSmtp: true` in your `appsettings.json`:
+
+```json
+"MailSettings": {
+    "EnableInboundSmtp": true,
+    "InboundPort": 25
+}
+```
+
+2. Ensure **Port 25 is open for inbound connections** on your server.
+
+3. In the Domain Details page, add email aliases:
+   - `support` → `yourname@gmail.com`
+   - `info` → `team@company.com`
+   - `*` → `catchall@external.com` (catch-all)
+
+### How It Works
+
+```
+sender@gmail.com → support@yourdomain.com → yourname@gmail.com
+```
+
+When someone sends an email to `support@yourdomain.com`, MagicMail:
+1. Receives the email on port 25
+2. Looks up the alias in the database
+3. Forwards it immediately to the configured destination
+4. No local storage - pure relay
 
 ---
 

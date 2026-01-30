@@ -24,5 +24,8 @@ namespace MagicMail.Data
         public bool IsVerified { get; set; } = false;
         
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+        // Navigation property for email aliases
+        public ICollection<EmailAlias> Aliases { get; set; } = new List<EmailAlias>();
     }
 }

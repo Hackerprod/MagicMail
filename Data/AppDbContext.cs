@@ -10,6 +10,7 @@ namespace MagicMail.Data
 
         public DbSet<EmailMessage> EmailMessages { get; set; }
         public DbSet<Domain> Domains { get; set; }
+        public DbSet<EmailAlias> EmailAliases { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -21,6 +22,11 @@ namespace MagicMail.Data
                 
             modelBuilder.Entity<EmailMessage>()
                 .HasIndex(e => e.NextAttemptAfter);
+
+            // Índice compuesto para búsqueda rápida de aliases
+            modelBuilder.Entity<EmailAlias>()
+                .HasIndex(a => new { a.DomainId, a.LocalPart })
+                .IsUnique();
         }
     }
 }
