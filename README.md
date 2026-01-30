@@ -168,36 +168,6 @@ curl http://localhost:1122/api/email/status/42 \
 
 ---
 
-## 🔐 Security
-
-- **API Key Authentication**: All API endpoints require a valid `X-Api-Key` header.
-- **Admin Authentication**: Dashboard access requires username/password login.
-- **DKIM Private Keys**: Stored encrypted in the SQLite database per domain.
-
----
-
-## 📊 Deliverability Tips
-
-1. **Set Reverse DNS (PTR)**: Contact your VPS provider to set the PTR record for your IP.
-2. **Use HeloHostname**: Ensure your EHLO hostname matches your rDNS.
-3. **Warm Up Your IP**: Start by sending small volumes and gradually increase.
-4. **Monitor Blacklists**: Use [MXToolbox](https://mxtoolbox.com/) to check your IP reputation.
-5. **Test with Mail-Tester**: Send a test email to [mail-tester.com](https://www.mail-tester.com/) and aim for 10/10.
-
----
-
-## 🛠️ CLI Commands
-
-### Generate DKIM Keys
-
-```bash
-dotnet run -- gen-dkim
-```
-
-This generates `dkim_private.pem` and `dkim_public.pem` files and prints the DNS record value.
-
----
-
 ## 📬 Email Forwarding (Aliases)
 
 MagicMail can receive emails on your managed domains and forward them to external addresses without storing them locally.
@@ -231,6 +201,36 @@ When someone sends an email to `support@yourdomain.com`, MagicMail:
 2. Looks up the alias in the database
 3. Forwards it immediately to the configured destination
 4. No local storage - pure relay
+
+---
+
+## 🔐 Security
+
+- **API Key Authentication**: All API endpoints require a valid `X-Api-Key` header.
+- **Admin Authentication**: Dashboard access requires username/password login.
+- **DKIM Private Keys**: Stored encrypted in the SQLite database per domain.
+
+---
+
+## 📊 Deliverability Tips
+
+1. **Set Reverse DNS (PTR)**: Contact your VPS provider to set the PTR record for your IP.
+2. **Use HeloHostname**: Ensure your EHLO hostname matches your rDNS.
+3. **Warm Up Your IP**: Start by sending small volumes and gradually increase.
+4. **Monitor Blacklists**: Use [MXToolbox](https://mxtoolbox.com/) to check your IP reputation.
+5. **Test with Mail-Tester**: Send a test email to [mail-tester.com](https://www.mail-tester.com/) and aim for 10/10.
+
+---
+
+## 🛠️ CLI Commands
+
+### Generate DKIM Keys
+
+```bash
+dotnet run -- gen-dkim
+```
+
+This generates `dkim_private.pem` and `dkim_public.pem` files and prints the DNS record value.
 
 ---
 
