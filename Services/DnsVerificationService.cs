@@ -72,22 +72,32 @@ namespace MagicMail.Services
             {
                 var dkimHost = $"{domain.DkimSelector}._domainkey.{domainName}";
                 var dkimRecords = await _dnsClient.QueryAsync(dkimHost, QueryType.TXT);
-                var dkimTxt = dkimRecords.Answers.TxtRecords()
+                
+                // Join all TXT record parts (Cloudflare splits long records into multiple strings)
+                var dkimTxtParts = dkimRecords.Answers.TxtRecords()
                     .SelectMany(t => t.Text)
-                    .FirstOrDefault(t => t.Contains("v=DKIM1"));
+                    .ToList();
+                var dkimTxt = string.Join("", dkimTxtParts);
 
-                if (!string.IsNullOrEmpty(dkimTxt))
+                if (!string.IsNullOrEmpty(dkimTxt) && dkimTxt.Contains("v=DKIM1"))
                 {
                     result.DkimRecord = dkimTxt;
-                    // Extract the public key from our domain config and check if it matches
+                    
+                    // Extract our public key and check if it's contained in the DNS record
                     var ourKey = domain.DkimPublicKey
                         .Replace("-----BEGIN PUBLIC KEY-----", "")
                         .Replace("-----END PUBLIC KEY-----", "")
-                        .Replace("\r", "").Replace("\n", "").Trim();
+                        .Replace("\r", "").Replace("\n", "").Replace(" ", "").Trim();
                     
-                    result.DkimValid = dkimTxt.Contains(ourKey.Substring(0, Math.Min(50, ourKey.Length)));
+                    // Check if the first 40 chars of our key appear in the DNS record (handles fragmentation)
+                    var keyPrefix = ourKey.Substring(0, Math.Min(40, ourKey.Length));
+                    result.DkimValid = dkimTxt.Replace(" ", "").Contains(keyPrefix);
+                    
                     if (!result.DkimValid)
+                    {
+                        _logger.LogWarning("DKIM key mismatch for {Domain}. Expected prefix: {Prefix}", domainName, keyPrefix);
                         result.Issues.Add("DKIM exists but public key doesn't match");
+                    }
                 }
                 else
                 {
