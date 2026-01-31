@@ -57,6 +57,7 @@ builder.Services.Configure<MagicMail.Settings.AdminSettings>(builder.Configurati
 builder.Services.AddSingleton<MagicMail.Services.DkimSigner>();
 builder.Services.AddSingleton<MagicMail.Services.MxResolver>(); // DNS Resolver
 builder.Services.AddSingleton<MagicMail.Services.ServerIdentityResolver>();
+builder.Services.AddSingleton<MagicMail.Services.DnsVerificationService>(); // DNS Verification
 builder.Services.AddScoped<MagicMail.Services.SmtpSender>();
 builder.Services.AddHostedService<MagicMail.Workers.QueueWorker>();
 builder.Services.AddHostedService<MagicMail.Services.InboundSmtpServer>(); // Email Forwarding

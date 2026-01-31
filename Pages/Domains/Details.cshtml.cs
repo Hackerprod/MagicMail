@@ -10,16 +10,23 @@ namespace MagicMail.Pages.Domains
     {
         private readonly AppDbContext _context;
         private readonly CloudflareService _cloudflare;
+        private readonly DnsVerificationService _dnsVerifier;
         private readonly MagicMail.Settings.AdminSettings _adminSettings;
 
-        public DetailsModel(AppDbContext context, CloudflareService cloudflare, Microsoft.Extensions.Options.IOptions<MagicMail.Settings.AdminSettings> adminSettings)
+        public DetailsModel(
+            AppDbContext context, 
+            CloudflareService cloudflare, 
+            DnsVerificationService dnsVerifier,
+            Microsoft.Extensions.Options.IOptions<MagicMail.Settings.AdminSettings> adminSettings)
         {
             _context = context;
             _cloudflare = cloudflare;
+            _dnsVerifier = dnsVerifier;
             _adminSettings = adminSettings.Value;
         }
 
         public Domain Domain { get; set; } = default!;
+        public DnsVerificationResult? DnsResult { get; set; }
 
         // DNS Records to display/copy
         public string DkimRecordName { get; set; } = "default._domainkey";
@@ -85,37 +92,90 @@ namespace MagicMail.Pages.Domains
             MxRecordValue = $"mail.{Domain.DomainName}";
         }
 
+        public async Task<IActionResult> OnPostVerifyDnsAsync(int id)
+        {
+            var domain = await _context.Domains.FindAsync(id);
+            if (domain == null) return NotFound();
+
+            Domain = domain;
+            
+            // Get server IP
+            string serverIp = "127.0.0.1";
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(2);
+                serverIp = await client.GetStringAsync("https://api.ipify.org");
+            }
+            catch { }
+
+            // Verify DNS records
+            var result = await _dnsVerifier.VerifyDomainAsync(domain, serverIp);
+
+            if (result.AllValid)
+            {
+                domain.IsVerified = true;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "✅ All DNS records verified successfully! Domain is now active.";
+            }
+            else
+            {
+                var issues = string.Join("<br>", result.Issues.Select(i => $"• {i}"));
+                TempData["Warning"] = $"DNS verification found issues:<br>{issues}";
+                
+                // Still mark as verified if at least 3 out of 4 are valid (partial)
+                if (new[] { result.SpfValid, result.DkimValid, result.DmarcValid, result.MxValid }.Count(x => x) >= 3)
+                {
+                    domain.IsVerified = true;
+                    await _context.SaveChangesAsync();
+                }
+            }
+
+            return RedirectToPage(new { id });
+        }
+
         public async Task<IActionResult> OnPostSyncCloudflareAsync(int id)
         {
             var domain = await _context.Domains.FindAsync(id);
             if (domain == null) return NotFound();
 
             Domain = domain;
-            // PrepareDnsInfo(); // This call is removed as values are re-calculated below
 
+            // First, verify if DNS records already exist
+            string serverIp = "127.0.0.1";
+            try
+            {
+                using var client = new HttpClient();
+                client.Timeout = TimeSpan.FromSeconds(2);
+                serverIp = await client.GetStringAsync("https://api.ipify.org");
+            }
+            catch { }
+
+            var verifyResult = await _dnsVerifier.VerifyDomainAsync(domain, serverIp);
+
+            // If all records already exist and are valid, just mark as verified
+            if (verifyResult.AllValid)
+            {
+                domain.IsVerified = true;
+                await _context.SaveChangesAsync();
+                TempData["Success"] = "✅ DNS records already configured correctly! Domain marked as verified.";
+                return RedirectToPage(new { id });
+            }
+
+            // Otherwise, proceed with Cloudflare sync
             if (string.IsNullOrEmpty(domain.CloudflareZoneId))
             {
-                // Try to fetch it now
                 var zId = await _cloudflare.GetZoneIdAsync(domain.DomainName);
                 if (string.IsNullOrEmpty(zId))
                 {
                     TempData["Error"] = "Could not find Zone ID in Cloudflare. Ensure domain exists in your CF account.";
-                    return RedirectToPage(new { id = id });
+                    return RedirectToPage(new { id });
                 }
                 domain.CloudflareZoneId = zId;
                 await _context.SaveChangesAsync();
             }
 
-            // Prepare values again (sync logic is separate from Get)
-            // We need the IP again. Ideally refactor, but for now repeat or assume same.
-            // Let's re-fetch quickly just to be safe.
-             string serverIp = "127.0.0.1"; 
-            try { 
-                using var client = new HttpClient(); client.Timeout = TimeSpan.FromSeconds(2); 
-                serverIp = await client.GetStringAsync("https://api.ipify.org"); 
-            } catch {}
-
-             var step1 = domain.DkimPublicKey
+            var step1 = domain.DkimPublicKey
                 .Replace("-----BEGIN PUBLIC KEY-----", "")
                 .Replace("-----END PUBLIC KEY-----", "");
             var cleanKey = step1.Replace("\r", "").Replace("\n", "").Trim();
@@ -123,37 +183,27 @@ namespace MagicMail.Pages.Domains
             var spfVal = $"v=spf1 mx ip4:{serverIp} -all";
             var mxVal = $"mail.{domain.DomainName}";
 
-            // 1. SPF
-            bool s1 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "@", spfVal);
-            
-            // 2. DKIM
-            bool s2 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", $"{domain.DkimSelector}._domainkey", dkimVal);
-            
-            // 3. DMARC
-            bool s3 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "_dmarc", "v=DMARC1; p=none");
-
-            // 4. MX Configuration
-            // 4a. A Record for 'mail' subdomain
+            // Only create records that don't exist or are invalid
+            bool s1 = verifyResult.SpfValid || await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "@", spfVal);
+            bool s2 = verifyResult.DkimValid || await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", $"{domain.DkimSelector}._domainkey", dkimVal);
+            bool s3 = verifyResult.DmarcValid || await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "TXT", "_dmarc", "v=DMARC1; p=none");
             bool s4 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "A", "mail", serverIp);
-            
-            // 4b. MX Record pointing to 'mail' subdomain
-            bool s5 = await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "MX", "@", mxVal, 10);
+            bool s5 = verifyResult.MxValid || await _cloudflare.CreateDnsRecordAsync(domain.CloudflareZoneId, "MX", "@", mxVal, 10);
 
             if (s1 && s2 && s3 && s4 && s5)
             {
                 domain.IsVerified = true;
                 await _context.SaveChangesAsync();
-                TempData["Success"] = "DNS records (SPF, DKIM, DMARC, MX, A) synced to Cloudflare successfully!";
+                TempData["Success"] = "DNS records synced to Cloudflare successfully!";
             }
             else
             {
-                TempData["Warning"] = "Some records may have failed to sync (e.g. duplicates). Check Cloudflare dashboard.";
-                // We still mark verified if at least some worked? No, better safe.
-                domain.IsVerified = true; 
+                TempData["Warning"] = "Some records may have failed (duplicates?). Check Cloudflare dashboard.";
+                domain.IsVerified = true;
                 await _context.SaveChangesAsync();
             }
 
-            return RedirectToPage(new { id = id });
+            return RedirectToPage(new { id });
         }
 
         public async Task<IActionResult> OnPostDeleteAsync(int id)
