@@ -49,6 +49,8 @@ namespace MagicMail.Pages.Domains
         [TempData]
         public string? Error { get; set; } // Added for new TempData messages
 
+        // Server IP for display
+        public string ServerIp { get; set; } = "127.0.0.1";
 
         public async Task<IActionResult> OnGetAsync(int id)
         {
@@ -58,6 +60,16 @@ namespace MagicMail.Pages.Domains
             Domain = domain;
             await PrepareDnsInfo();
             await LoadAliasesAsync(id);
+
+            // Silently verify DNS status on page load
+            DnsResult = await _dnsVerifier.VerifyDomainAsync(domain, ServerIp);
+
+            // Auto-update verification status if all DNS are valid
+            if (DnsResult.AllValid && !domain.IsVerified)
+            {
+                domain.IsVerified = true;
+                await _context.SaveChangesAsync();
+            }
 
             return Page();
         }
@@ -71,24 +83,23 @@ namespace MagicMail.Pages.Domains
             DkimRecordValue = $"v=DKIM1; k=rsa; p={cleanKey}";
             
             // SPF & MX: Detect Public IP Properly
-            string serverIp = "YOUR_SERVER_IP"; 
             try 
             {
                 using var client = new HttpClient();
                 client.Timeout = TimeSpan.FromSeconds(2);
-                serverIp = await client.GetStringAsync("https://api.ipify.org");
+                ServerIp = await client.GetStringAsync("https://api.ipify.org");
             }
             catch
             {
                 // Fallback
             }
 
-            SpfRecordValue = $"v=spf1 mx ip4:{serverIp} -all";
+            SpfRecordValue = $"v=spf1 mx ip4:{ServerIp} -all";
             
             // MX Strategy: 
             // 1. A Record: mail.domain.com -> IP
             // 2. MX Record: domain.com -> mail.domain.com (Priority 10)
-            MailARecordValue = serverIp;
+            MailARecordValue = ServerIp;
             MxRecordValue = $"mail.{Domain.DomainName}";
         }
 
