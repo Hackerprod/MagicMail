@@ -35,18 +35,21 @@ namespace MagicMail.Pages.Domains
             }
             catch { }
 
-            // Silently verify DNS for each domain and auto-update status
+            // Silently verify DNS for each domain and auto-update status (both directions)
             bool anyUpdated = false;
             foreach (var domain in Domains)
             {
-                if (!domain.IsVerified)
+                var result = await _dnsVerifier.VerifyDomainAsync(domain, serverIp);
+                
+                if (result.AllValid && !domain.IsVerified)
                 {
-                    var result = await _dnsVerifier.VerifyDomainAsync(domain, serverIp);
-                    if (result.AllValid)
-                    {
-                        domain.IsVerified = true;
-                        anyUpdated = true;
-                    }
+                    domain.IsVerified = true;
+                    anyUpdated = true;
+                }
+                else if (!result.AllValid && domain.IsVerified)
+                {
+                    domain.IsVerified = false;
+                    anyUpdated = true;
                 }
             }
 

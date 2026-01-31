@@ -64,10 +64,16 @@ namespace MagicMail.Pages.Domains
             // Silently verify DNS status on page load
             DnsResult = await _dnsVerifier.VerifyDomainAsync(domain, ServerIp);
 
-            // Auto-update verification status if all DNS are valid
+            // Auto-update verification status based on DNS check (both directions)
             if (DnsResult.AllValid && !domain.IsVerified)
             {
                 domain.IsVerified = true;
+                await _context.SaveChangesAsync();
+            }
+            else if (!DnsResult.AllValid && domain.IsVerified)
+            {
+                // DNS was removed or changed - mark as unverified
+                domain.IsVerified = false;
                 await _context.SaveChangesAsync();
             }
 
