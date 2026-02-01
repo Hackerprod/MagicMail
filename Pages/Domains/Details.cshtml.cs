@@ -302,7 +302,7 @@ namespace MagicMail.Pages.Domains
                 .ToListAsync();
         }
 
-        public async Task<IActionResult> OnPostAddAliasAsync(int id, string localPart, string forwardTo)
+        public async Task<IActionResult> OnPostAddAliasAsync(int id, string localPart, string forwardTo, bool includeForwardHeader)
         {
             var domain = await _context.Domains.FindAsync(id);
             if (domain == null) return NotFound();
@@ -332,13 +332,30 @@ namespace MagicMail.Pages.Domains
                 DomainId = id,
                 LocalPart = localPart,
                 ForwardTo = forwardTo,
-                IsActive = true
+                IsActive = true,
+                IncludeForwardHeader = includeForwardHeader
             };
 
             _context.EmailAliases.Add(alias);
             await _context.SaveChangesAsync();
 
             TempData["Success"] = $"Alias '{localPart}@{domain.DomainName}' → '{forwardTo}' created.";
+            return RedirectToPage(new { id });
+        }
+
+        public async Task<IActionResult> OnPostToggleHeaderAsync(int id, int aliasId)
+        {
+            var alias = await _context.EmailAliases.FindAsync(aliasId);
+            if (alias == null || alias.DomainId != id)
+            {
+                return NotFound();
+            }
+
+            alias.IncludeForwardHeader = !alias.IncludeForwardHeader;
+            await _context.SaveChangesAsync();
+            
+            TempData["Success"] = $"Forward header {(alias.IncludeForwardHeader ? "enabled" : "disabled")} for {alias.LocalPart}.";
+
             return RedirectToPage(new { id });
         }
 
