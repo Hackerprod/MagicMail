@@ -65,7 +65,8 @@
         </div>
     }
 
-    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- ROW 1: DNS Configuration + Domain Info/Danger Zone -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
         <!-- Main Column (Left/Top) -->
         <div class="lg:col-span-2 space-y-6">
             
@@ -199,26 +200,74 @@
                 </div>
             </div>
 
-            <!-- Test Delivery Card -->
+        </div> 
+        
+        <!-- Sidebar Column (Right) Row 1 -->
+        <div class="space-y-6">
+             <!-- Info Card -->
             <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
                 <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
-                    <h3 class="text-base font-semibold leading-6 text-slate-900">Test Delivery</h3>
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">Domain Info</h3>
+                </div>
+                <div class="border-t border-slate-200 px-4 py-5 sm:p-0">
+                    <dl class="divide-y divide-slate-200">
+                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">ID</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">@Model.Domain.Id</dd>
+                        </div>
+                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">Status</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
+                                @if (Model.Domain.IsVerified)
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Verified</span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Unverified</span>
+                                }
+                            </dd>
+                        </div>
+                         <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                            <dt class="text-sm font-medium text-slate-500">Zone ID</dt>
+                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
+                                 @if (!string.IsNullOrEmpty(Model.Domain.CloudflareZoneId))
+                                {
+                                    <code class="text-xs">@Model.Domain.CloudflareZoneId</code>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400 italic">Not Synced</span>
+                                }
+                            </dd>
+                        </div>
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Danger Zone -->
+            <div class="bg-white shadow-sm ring-1 ring-red-200 rounded-xl overflow-hidden">
+                <div class="border-b border-red-100 bg-red-50 px-4 py-5 sm:px-6">
+                    <h3 class="text-base font-semibold leading-6 text-red-700">Danger Zone</h3>
                 </div>
                 <div class="px-4 py-5 sm:p-6">
-                    <form asp-page-handler="TestEmail" method="post" class="sm:flex sm:items-center">
-                        <div class="w-full sm:max-w-xs">
-                             <label for="testEmail" class="sr-only">Recipient Email</label>
-                             <input type="email" name="testEmail" id="testEmail" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" placeholder="you@example.com" required>
-                        </div>
-                        <button type="submit" class="mt-3 inline-flex w-full items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600 sm:ml-3 sm:mt-0 sm:w-auto">
-                            Send Test Email
+                    <p class="text-sm text-slate-500 mb-4">Deleting this domain will permanently remove it from the database and attempt to clean up Cloudflare records.</p>
+                     <form asp-page-handler="Delete" method="post">
+                        <button type="submit" class="w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 transition-colors" onclick="return confirm('Are you sure you want to delete this domain? This cannot be undone.');">
+                            Delete Domain
                         </button>
                     </form>
                 </div>
             </div>
+        </div>
+    </div> <!-- End Row 1 -->
 
-            <!-- Email Aliases Card -->
-            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
+    <!-- ROW 2: Email Aliases + Test Delivery -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Column (Left) -->
+        <div class="lg:col-span-2">
+             <!-- Email Aliases Card -->
+            <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden h-full">
                 <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
                     <h3 class="text-base font-semibold leading-6 text-slate-900">
                         <i class="bi bi-envelope-arrow-up mr-2"></i>Email Aliases (Forwarding)
@@ -298,66 +347,29 @@
                             </button>
                         </form>
                     </div>
+                </div>
             </div>
         </div>
 
-        <!-- Sidebar Column (Right) -->
-        <div class="space-y-6">
-            <!-- Info Card -->
+        <!-- Sidebar Column (Right) Row 2 -->
+        <div class="space-y-6 lg:self-start">
+             <!-- Test Delivery Card (Sidebar) -->
             <div class="bg-white shadow-sm ring-1 ring-slate-900/5 rounded-xl overflow-hidden">
                 <div class="border-b border-slate-200 px-4 py-5 sm:px-6">
-                    <h3 class="text-base font-semibold leading-6 text-slate-900">Domain Info</h3>
-                </div>
-                <div class="border-t border-slate-200 px-4 py-5 sm:p-0">
-                    <dl class="divide-y divide-slate-200">
-                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-slate-500">ID</dt>
-                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">@Model.Domain.Id</dd>
-                        </div>
-                        <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-slate-500">Status</dt>
-                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
-                                @if (Model.Domain.IsVerified)
-                                {
-                                    <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Verified</span>
-                                }
-                                else
-                                {
-                                    <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Unverified</span>
-                                }
-                            </dd>
-                        </div>
-                         <div class="py-4 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
-                            <dt class="text-sm font-medium text-slate-500">Zone ID</dt>
-                            <dd class="mt-1 text-sm text-slate-900 sm:col-span-2 sm:mt-0">
-                                 @if (!string.IsNullOrEmpty(Model.Domain.CloudflareZoneId))
-                                {
-                                    <code class="text-xs">@Model.Domain.CloudflareZoneId</code>
-                                }
-                                else
-                                {
-                                    <span class="text-slate-400 italic">Not Synced</span>
-                                }
-                            </dd>
-                        </div>
-                    </dl>
-                </div>
-            </div>
-
-            <!-- Danger Zone -->
-            <div class="bg-white shadow-sm ring-1 ring-red-200 rounded-xl overflow-hidden">
-                <div class="border-b border-red-100 bg-red-50 px-4 py-5 sm:px-6">
-                    <h3 class="text-base font-semibold leading-6 text-red-700">Danger Zone</h3>
+                    <h3 class="text-base font-semibold leading-6 text-slate-900">Test Delivery</h3>
                 </div>
                 <div class="px-4 py-5 sm:p-6">
-                    <p class="text-sm text-slate-500 mb-4">Deleting this domain will permanently remove it from the database and attempt to clean up Cloudflare records.</p>
-                     <form asp-page-handler="Delete" method="post">
-                        <button type="submit" class="w-full rounded-md bg-white px-3 py-2 text-sm font-semibold text-red-600 shadow-sm ring-1 ring-inset ring-red-300 hover:bg-red-50 transition-colors" onclick="return confirm('Are you sure you want to delete this domain? This cannot be undone.');">
-                            Delete Domain
+                    <form asp-page-handler="TestEmail" method="post" class="flex flex-col gap-3">
+                        <div class="w-full">
+                             <label for="testEmail" class="sr-only">Recipient Email</label>
+                             <input type="email" name="testEmail" id="testEmail" class="block w-full rounded-md border-0 py-1.5 text-slate-900 shadow-sm ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-brand-600 sm:text-sm sm:leading-6" placeholder="target@email.com" required>
+                        </div>
+                        <button type="submit" class="w-full inline-flex items-center justify-center rounded-md bg-green-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-green-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-600">
+                            Send Test Email
                         </button>
                     </form>
                 </div>
             </div>
         </div>
-    </div>
+    </div> <!-- End Row 2 -->
 </div>
