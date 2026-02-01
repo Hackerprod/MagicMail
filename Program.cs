@@ -3,6 +3,9 @@ using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Patch DB if needed
+try { MagicMail.DbPatcher.Patch(); } catch { }
+
 // --- MODO GENERACIÓN DE CLAVES ---
 if (args.Length > 0 && args[0] == "gen-dkim")
 {
